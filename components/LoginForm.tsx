@@ -55,7 +55,19 @@ export default function LoginForm({ next, tipo }: Props) {
       return
     }
 
-    const role = data.user?.user_metadata?.role as string | undefined
+    // Query profiles table for role — user_metadata can be stale or missing
+    const userId = data.user?.id
+    let role: string | undefined = data.user?.user_metadata?.role as string | undefined
+
+    if (userId && !role) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .maybeSingle()
+      role = profile?.role as string | undefined
+    }
+
     router.push(role === 'admin' ? '/admin' : next)
     router.refresh()
   }
