@@ -47,7 +47,7 @@ export default function LoginForm({ next, tipo }: Props) {
     setError(null)
 
     const supabase = createClient()
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
       setError('E-mail ou senha incorretos. Verifique suas credenciais.')
@@ -55,20 +55,8 @@ export default function LoginForm({ next, tipo }: Props) {
       return
     }
 
-    // Query profiles table for role — user_metadata can be stale or missing
-    const userId = data.user?.id
-    let role: string | undefined = data.user?.user_metadata?.role as string | undefined
-
-    if (userId && !role) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', userId)
-        .maybeSingle()
-      role = profile?.role as string | undefined
-    }
-
-    router.push(role === 'admin' ? '/admin' : next)
+    // Admin form always goes to /admin — permission check is in the admin layout
+    router.push(view === 'admin' ? '/admin' : next)
     router.refresh()
   }
 
