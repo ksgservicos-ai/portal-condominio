@@ -12,8 +12,16 @@ export default async function PortalLayout({ children }: { children: React.React
 
   if (!user) redirect('/login')
 
-  const role  = user.user_metadata?.role  as string | undefined
-  const nome  = user.user_metadata?.nome  as string | undefined
+  // Query profiles table as source of truth for role; fall back to user_metadata
+  // (user_metadata can be stale if role was set after the last login)
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, nome')
+    .eq('id', user.id)
+    .single()
+
+  const role  = (profile?.role  ?? user.user_metadata?.role)  as string | undefined
+  const nome  = (profile?.nome  ?? user.user_metadata?.nome)  as string | undefined
   const email = user.email ?? ''
 
   return (
