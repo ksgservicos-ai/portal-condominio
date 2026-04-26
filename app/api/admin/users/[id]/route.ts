@@ -14,12 +14,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const caller = await requireAdmin()
-  if (!caller) {
-    return NextResponse.json({ error: 'Não autorizado' }, { status: 403 })
-  }
+  if (!caller) return NextResponse.json({ error: 'Não autorizado' }, { status: 403 })
 
   const { id } = await params
-
   if (caller.id === id) {
     return NextResponse.json({ error: 'Você não pode excluir sua própria conta' }, { status: 400 })
   }
@@ -36,22 +33,41 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const caller = await requireAdmin()
-  if (!caller) {
-    return NextResponse.json({ error: 'Não autorizado' }, { status: 403 })
-  }
+  if (!caller) return NextResponse.json({ error: 'Não autorizado' }, { status: 403 })
 
   const { id } = await params
-  const { role } = await request.json()
+  const body = await request.json()
+  const { role, nome, apartamento, bloco } = body
 
-  if (!['admin', 'usuario'].includes(role)) {
+  if (role !== undefined && !['admin', 'usuario'].includes(role)) {
     return NextResponse.json({ error: 'Perfil inválido' }, { status: 400 })
   }
 
   const admin = createAdminClient()
-  const { error } = await admin.auth.admin.updateUserById(id, {
-    user_metadata: { role },
-  })
+
+  // Fetch current metadata to merge
+  const { data: userData } = await admin.auth.admin.getUserById(id)
+  const currentMeta = userData?.user?.user_metadata ?? {}
+
+  const updatedMeta: Record<string, unknown> = { ...currentMeta }
+  if (role !== undefined)       updatedMeta.role       = role
+  if (nome !== undefined)       updatedMeta.nome       = nome
+  if (apartamento !== undefined) updatedMeta.apartamento = apartamento
+  if (bloco !== undefined)      updatedMeta.bloco      = bloco
+
+  const { error } = await admin.auth.admin.updateUserById(id, { user_metadata: updatedMeta })
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+
+  // Sync profiles table
+  const profilePatch: Record<string, unknown> = {}
+  if (role !== undefined)        profilePatch.role       = role
+  if (nome !== undefined)        profilePatch.nome       = nome
+  if (apartamento !== undefined) profilePatch.apartamento = apartamento
+  if (bloco !== undefined)       profilePatch.bloco      = bloco
+
+  if (Object.keys(profilePatch).length > 0) {
+    await admin.from('profiles').update(profilePatch).eq('id', id)
+  }
 
   return NextResponse.json({ success: true })
 }

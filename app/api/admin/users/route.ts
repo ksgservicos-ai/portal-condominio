@@ -21,6 +21,9 @@ export async function GET() {
   const users = data.users.map((u) => ({
     id: u.id,
     email: u.email ?? '',
+    nome: (u.user_metadata?.nome as string) ?? '',
+    apartamento: (u.user_metadata?.apartamento as string) ?? '',
+    bloco: (u.user_metadata?.bloco as string) ?? '',
     role: (u.user_metadata?.role as string) ?? 'usuario',
     created_at: u.created_at,
   }))
@@ -33,7 +36,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 403 })
   }
 
-  const { email, password, role } = await request.json()
+  const { email, password, nome, apartamento, bloco, role } = await request.json()
 
   if (!email || !password) {
     return NextResponse.json({ error: 'E-mail e senha são obrigatórios' }, { status: 400 })
@@ -50,15 +53,28 @@ export async function POST(request: Request) {
     email,
     password,
     email_confirm: true,
-    user_metadata: { role },
+    user_metadata: { nome: nome ?? '', apartamento: apartamento ?? '', bloco: bloco ?? '', role },
   })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+
+  // Upsert profile row
+  await admin.from('profiles').upsert({
+    id: data.user.id,
+    email,
+    nome: nome ?? '',
+    apartamento: apartamento ?? '',
+    bloco: bloco ?? '',
+    role,
+  })
 
   return NextResponse.json({
     user: {
       id: data.user.id,
       email: data.user.email,
+      nome: nome ?? '',
+      apartamento: apartamento ?? '',
+      bloco: bloco ?? '',
       role,
       created_at: data.user.created_at,
     },

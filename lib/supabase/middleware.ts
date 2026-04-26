@@ -30,13 +30,14 @@ export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl
   const role = user?.user_metadata?.role as string | undefined
 
-  const isLoginPage = pathname === '/login' || pathname === '/admin/login'
-  const isPortalRoute = pathname === '/' || pathname.startsWith('/publicacoes/')
-  const isAdminRoute = pathname.startsWith('/admin') && !isLoginPage
-  const isAuthApi = pathname.startsWith('/api/auth/')
+  const isLoginPage    = pathname === '/login' || pathname === '/admin/login'
+  const isCadastro     = pathname === '/cadastro'
+  const isPortalRoute  = pathname === '/' || pathname.startsWith('/publicacoes/')
+  const isAdminRoute   = pathname.startsWith('/admin') && !isLoginPage
+  const isAuthApi      = pathname.startsWith('/api/auth/')
 
-  // Auth callback routes always pass through
-  if (isAuthApi) return supabaseResponse
+  // Public routes always pass through
+  if (isAuthApi || isCadastro) return supabaseResponse
 
   // Portal requires any authenticated user
   if (isPortalRoute && !user) {

@@ -9,6 +9,9 @@ async function getUsers() {
   return data.users.map((u) => ({
     id: u.id,
     email: u.email ?? '',
+    nome: (u.user_metadata?.nome as string) ?? '',
+    apartamento: (u.user_metadata?.apartamento as string) ?? '',
+    bloco: (u.user_metadata?.bloco as string) ?? '',
     role: (u.user_metadata?.role as string) ?? 'usuario',
     created_at: u.created_at,
   }))
@@ -27,7 +30,6 @@ export default async function UsuariosPage() {
           Cadastre e gerencie os usuários com acesso ao portal.
         </p>
       </div>
-
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <UsersTable users={users} currentUserId={user!.id} />
       </div>
