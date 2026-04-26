@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import AdminButton from '@/components/AdminButton'
 import UserDropdown from '@/components/UserDropdown'
 import { Building2 } from 'lucide-react'
 import Link from 'next/link'
@@ -12,18 +13,8 @@ export default async function PortalLayout({ children }: { children: React.React
 
   if (!user) redirect('/login')
 
-  // Read profile directly — the server client carries the user session,
-  // so RLS (auth.uid() = id) resolves correctly.
-  // maybeSingle() returns null instead of error when row is missing.
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role, nome')
-    .eq('id', user.id)
-    .maybeSingle()
-
-  const role  = (profile?.role  ?? user.user_metadata?.role)  as string | undefined
-  const nome  = (profile?.nome  ?? user.user_metadata?.nome)  as string | undefined
   const email = user.email ?? ''
+  const nome  = user.user_metadata?.nome as string | undefined
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -40,7 +31,10 @@ export default async function PortalLayout({ children }: { children: React.React
               </div>
             </Link>
 
-            <UserDropdown email={email} nome={nome} role={role} />
+            <nav className="flex items-center gap-2">
+              <AdminButton />
+              <UserDropdown email={email} nome={nome} />
+            </nav>
           </div>
         </div>
       </header>
