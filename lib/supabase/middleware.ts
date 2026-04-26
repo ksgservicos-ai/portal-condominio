@@ -35,28 +35,10 @@ export async function updateSession(request: NextRequest) {
   const isAdminRoute  = pathname.startsWith('/admin') && !isLoginPage
   const isAuthApi     = pathname.startsWith('/api/auth/')
 
-  // Always allow public routes
+  // Always allow public/auth routes
   if (isAuthApi || isCadastro) return supabaseResponse
 
-  // Resolve role: JWT first, then profiles table as fallback
-  // (user_metadata can be missing for users created before the role system)
-  async function resolveRole(): Promise<string | undefined> {
-    if (!user) return undefined
-
-    const fromJWT = user.user_metadata?.role as string | undefined
-    if (fromJWT) return fromJWT
-
-    // JWT has no role — query profiles table
-    const { data } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .maybeSingle()
-
-    return data?.role as string | undefined
-  }
-
-  // Portal requires any authenticated user
+  // Portal requires an authenticated user (any role)
   if (isPortalRoute && !user) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
@@ -64,26 +46,18 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Admin routes: require authenticated user + admin role
-  if (isAdminRoute) {
-    if (!user) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/login'
-      return NextResponse.redirect(url)
-    }
-
-    const role = await resolveRole()
-    if (role !== 'admin') {
-      const url = request.nextUrl.clone()
-      url.pathname = '/'
-      url.search = ''
-      return NextResponse.redirect(url)
-    }
+  // Admin routes require an authenticated user
+  // Role check (admin vs usuario) is handled inside the admin layout,
+  // which uses the service-role client and is reliable in all environments
+  if (isAdminRoute && !user) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    return NextResponse.redirect(url)
   }
 
   // Redirect authenticated users away from login pages
   if (isLoginPage && user) {
-    const role = await resolveRole()
+    const role = user.user_metadata?.role as string | undefined
     const url = request.nextUrl.clone()
     url.pathname = role === 'admin' ? '/admin' : '/'
     url.search = ''
