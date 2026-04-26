@@ -1,6 +1,8 @@
+import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import PublicationForm from '@/components/admin/PublicationForm'
-import { type Publication } from '@/lib/types'
+import CommentsAdmin from '@/components/admin/CommentsAdmin'
+import { type Comment, type Publication } from '@/lib/types'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -12,23 +14,32 @@ async function getPublication(id: string): Promise<Publication | null> {
     .select('*')
     .eq('id', id)
     .single()
-
   if (error || !data) return null
   return data as Publication
 }
 
+async function getComments(publicationId: string): Promise<Comment[]> {
+  const admin = createAdminClient()
+  const { data } = await admin
+    .from('comments')
+    .select('id, publication_id, user_id, user_display_name, content, created_at')
+    .eq('publication_id', publicationId)
+    .order('created_at', { ascending: false })
+  return (data ?? []) as Comment[]
+}
+
 export default async function EditarPublicacaoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const publication = await getPublication(id)
+  const [publication, comments] = await Promise.all([
+    getPublication(id),
+    getComments(id),
+  ])
   if (!publication) notFound()
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Link
-          href="/admin"
-          className="text-gray-400 hover:text-gray-600 transition-colors"
-        >
+        <Link href="/admin" className="text-gray-400 hover:text-gray-600 transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
@@ -40,6 +51,9 @@ export default async function EditarPublicacaoPage({ params }: { params: Promise
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 sm:p-8">
         <PublicationForm mode="edit" publication={publication} />
       </div>
+
+      {/* Comments section — always shown in admin so admin can moderate */}
+      <CommentsAdmin comments={comments} />
     </div>
   )
 }

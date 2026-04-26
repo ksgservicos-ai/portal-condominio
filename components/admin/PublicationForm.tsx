@@ -25,6 +25,7 @@ export default function PublicationForm({ mode, publication }: Props) {
       : format(new Date(), 'yyyy-MM-dd')
   )
   const [isPublished, setIsPublished] = useState(publication?.is_published ?? true)
+  const [allowComments, setAllowComments] = useState(publication?.allow_comments ?? false)
   const [file, setFile] = useState<File | null>(null)
   const [existingFileUrl, setExistingFileUrl] = useState(publication?.file_url ?? null)
   const [existingFileName, setExistingFileName] = useState(publication?.file_name ?? null)
@@ -97,14 +98,28 @@ export default function PublicationForm({ mode, publication }: Props) {
         category,
         published_at: new Date(publishedAt).toISOString(),
         is_published: isPublished,
+        allow_comments: allowComments,
         file_url: fileUrl,
         file_name: fileName,
         updated_at: new Date().toISOString(),
       }
 
       if (mode === 'create') {
-        const { error: insertError } = await supabase.from('publications').insert([payload])
+        const { data: inserted, error: insertError } = await supabase
+          .from('publications')
+          .insert([payload])
+          .select('id')
+          .single()
         if (insertError) throw new Error(insertError.message)
+
+        // Send email notification if published
+        if (isPublished && inserted?.id) {
+          await fetch('/api/notify-publication', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ publicationId: inserted.id }),
+          }).catch(() => {/* notification failure is non-blocking */})
+        }
       } else {
         const { error: updateError } = await supabase
           .from('publications')
@@ -246,30 +261,40 @@ export default function PublicationForm({ mode, publication }: Props) {
         />
       </div>
 
-      {/* Is Published */}
-      <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
-        <button
-          type="button"
-          onClick={() => setIsPublished(!isPublished)}
-          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 ${
-            isPublished ? 'bg-brand-600' : 'bg-gray-300'
-          }`}
-        >
-          <span
-            className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${
-              isPublished ? 'translate-x-6' : 'translate-x-1'
+      {/* Toggles row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {/* Is Published */}
+        <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <button
+            type="button"
+            onClick={() => setIsPublished(!isPublished)}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 ${
+              isPublished ? 'bg-brand-600' : 'bg-gray-300'
             }`}
-          />
-        </button>
-        <div>
-          <p className="text-sm font-medium text-gray-700">
-            {isPublished ? 'Publicado' : 'Rascunho'}
-          </p>
-          <p className="text-xs text-gray-400">
-            {isPublished
-              ? 'Visível no portal público'
-              : 'Não visível no portal público'}
-          </p>
+          >
+            <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${isPublished ? 'translate-x-6' : 'translate-x-1'}`} />
+          </button>
+          <div>
+            <p className="text-sm font-medium text-gray-700">{isPublished ? 'Publicado' : 'Rascunho'}</p>
+            <p className="text-xs text-gray-400">{isPublished ? 'Visível no portal' : 'Não visível'}</p>
+          </div>
+        </div>
+
+        {/* Allow Comments */}
+        <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <button
+            type="button"
+            onClick={() => setAllowComments(!allowComments)}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 ${
+              allowComments ? 'bg-brand-600' : 'bg-gray-300'
+            }`}
+          >
+            <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${allowComments ? 'translate-x-6' : 'translate-x-1'}`} />
+          </button>
+          <div>
+            <p className="text-sm font-medium text-gray-700">{allowComments ? 'Comentários ativos' : 'Comentários inativos'}</p>
+            <p className="text-xs text-gray-400">{allowComments ? 'Moradores podem comentar' : 'Comentários desabilitados'}</p>
+          </div>
         </div>
       </div>
 
