@@ -1,3 +1,4 @@
+import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { Building2, FileText, LogOut, Plus, Users } from 'lucide-react'
 import Link from 'next/link'
@@ -9,9 +10,19 @@ export default async function DashboardLayout({ children }: { children: React.Re
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user) {
-    redirect('/admin/login')
-  }
+  if (!user) redirect('/login')
+
+  // Use admin client to bypass RLS — reliable role check
+  const admin = createAdminClient()
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  const role = profile?.role ?? (user.user_metadata?.role as string | undefined)
+
+  if (role !== 'admin') redirect('/')
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">

@@ -28,16 +28,33 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const { pathname } = request.nextUrl
-  const role = user?.user_metadata?.role as string | undefined
 
-  const isLoginPage    = pathname === '/login' || pathname === '/admin/login'
-  const isCadastro     = pathname === '/cadastro'
-  const isPortalRoute  = pathname === '/' || pathname.startsWith('/publicacoes/')
-  const isAdminRoute   = pathname.startsWith('/admin') && !isLoginPage
-  const isAuthApi      = pathname.startsWith('/api/auth/')
+  const isLoginPage   = pathname === '/login' || pathname === '/admin/login'
+  const isCadastro    = pathname === '/cadastro'
+  const isPortalRoute = pathname === '/' || pathname.startsWith('/publicacoes/')
+  const isAdminRoute  = pathname.startsWith('/admin') && !isLoginPage
+  const isAuthApi     = pathname.startsWith('/api/auth/')
 
-  // Public routes always pass through
+  // Always allow public routes
   if (isAuthApi || isCadastro) return supabaseResponse
+
+  // Resolve role: JWT first, then profiles table as fallback
+  // (user_metadata can be missing for users created before the role system)
+  async function resolveRole(): Promise<string | undefined> {
+    if (!user) return undefined
+
+    const fromJWT = user.user_metadata?.role as string | undefined
+    if (fromJWT) return fromJWT
+
+    // JWT has no role — query profiles table
+    const { data } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    return data?.role as string | undefined
+  }
 
   // Portal requires any authenticated user
   if (isPortalRoute && !user) {
@@ -47,23 +64,26 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Admin routes require authenticated admin
-  if (isAdminRoute && !user) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
-  }
+  // Admin routes: require authenticated user + admin role
+  if (isAdminRoute) {
+    if (!user) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      return NextResponse.redirect(url)
+    }
 
-  // Block non-admin authenticated users from admin routes
-  if (isAdminRoute && user && role !== 'admin') {
-    const url = request.nextUrl.clone()
-    url.pathname = '/'
-    url.search = ''
-    return NextResponse.redirect(url)
+    const role = await resolveRole()
+    if (role !== 'admin') {
+      const url = request.nextUrl.clone()
+      url.pathname = '/'
+      url.search = ''
+      return NextResponse.redirect(url)
+    }
   }
 
   // Redirect authenticated users away from login pages
   if (isLoginPage && user) {
+    const role = await resolveRole()
     const url = request.nextUrl.clone()
     url.pathname = role === 'admin' ? '/admin' : '/'
     url.search = ''
