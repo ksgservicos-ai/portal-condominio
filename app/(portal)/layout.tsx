@@ -27,7 +27,7 @@ export default async function PortalLayout({ children }: { children: React.React
               </div>
               <div>
                 <span className="text-sm font-bold leading-tight block">Portal de Transparência</span>
-                <span className="text-brand-300 text-xs">Condomínio</span>
+                <span className="text-brand-300 text-xs">Viver Bem JD Independência</span>
               </div>
             </Link>
 

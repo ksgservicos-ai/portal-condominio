@@ -59,7 +59,7 @@ export default function CadastroForm() {
             <Home className="w-7 h-7 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-white">Cadastro de Morador</h1>
-          <p className="text-brand-300 mt-1 text-sm">Portal de Transparência · Condomínio</p>
+          <p className="text-brand-300 mt-1 text-sm">Portal de Transparência · Viver Bem JD Independência</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-2xl p-8">

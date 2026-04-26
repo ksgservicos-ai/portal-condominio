@@ -5,11 +5,11 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Portal de Transparência - Condomínio',
-  description: 'Acesso às informações, atas, comunicados e documentos do condomínio.',
+  title: 'Portal de Transparência - Viver Bem JD Independência',
+  description: 'Acesso às informações, atas, comunicados e documentos do Viver Bem JD Independência.',
   openGraph: {
-    title: 'Portal de Transparência - Condomínio',
-    description: 'Acesso às informações, atas, comunicados e documentos do condomínio.',
+    title: 'Portal de Transparência - Viver Bem JD Independência',
+    description: 'Acesso às informações, atas, comunicados e documentos do Viver Bem JD Independência.',
     type: 'website',
   },
 }

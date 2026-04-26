@@ -129,9 +129,9 @@ export default async function HomePage({
 
       <footer className="bg-gray-800 text-gray-400 py-6 mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm">
-          <p>Portal de Transparência · Condomínio</p>
+          <p>Portal de Transparência · Viver Bem JD Independência</p>
           <p className="mt-1 text-gray-500 text-xs">
-            As informações publicadas neste portal são de responsabilidade da administração do condomínio.
+            As informações publicadas neste portal são de responsabilidade da administração do Viver Bem JD Independência.
           </p>
         </div>
       </footer>

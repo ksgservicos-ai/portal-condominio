@@ -71,7 +71,7 @@ export default function LoginForm({ next, tipo }: Props) {
               <Building2 className="w-7 h-7 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-white">Portal de Transparência</h1>
-            <p className="text-brand-300 mt-1 text-sm">Condomínio</p>
+            <p className="text-brand-300 mt-1 text-sm">Viver Bem JD Independência</p>
           </div>
 
           <p className="text-center text-brand-200 text-base mb-6 font-medium">
@@ -112,7 +112,7 @@ export default function LoginForm({ next, tipo }: Props) {
               </div>
               <h3 className="text-lg font-bold text-gray-900 mb-1.5">Morador</h3>
               <p className="text-gray-500 text-sm leading-relaxed">
-                Visualize documentos, atas, comunicados e arquivos do condomínio.
+                Visualize documentos, atas, comunicados e arquivos do Viver Bem JD Independência.
               </p>
               <div className="mt-5 text-brand-600 text-xs font-medium group-hover:text-brand-800 transition-colors flex items-center gap-1">
                 Entrar como morador →
