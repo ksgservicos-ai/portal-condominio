@@ -1,3 +1,4 @@
+import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import UserDropdown from '@/components/UserDropdown'
 import { Building2 } from 'lucide-react'
@@ -12,17 +13,27 @@ export default async function PortalLayout({ children }: { children: React.React
 
   if (!user) redirect('/login')
 
-  // Query profiles table as source of truth for role; fall back to user_metadata
-  // (user_metadata can be stale if role was set after the last login)
-  const { data: profile } = await supabase
+  // Use admin client to bypass RLS — guarantees correct role is always read
+  const admin = createAdminClient()
+  const { data: profile, error: profileError } = await admin
     .from('profiles')
     .select('role, nome')
     .eq('id', user.id)
     .single()
 
-  const role  = (profile?.role  ?? user.user_metadata?.role)  as string | undefined
-  const nome  = (profile?.nome  ?? user.user_metadata?.nome)  as string | undefined
+  console.log('[PortalLayout] userId          :', user.id)
+  console.log('[PortalLayout] email            :', user.email)
+  console.log('[PortalLayout] metadata.role    :', user.user_metadata?.role)
+  console.log('[PortalLayout] metadata.nome    :', user.user_metadata?.nome)
+  console.log('[PortalLayout] profile row      :', JSON.stringify(profile))
+  console.log('[PortalLayout] profile error    :', profileError?.message ?? 'none')
+
+  const role  = (profile?.role ?? user.user_metadata?.role)  as string | undefined
+  const nome  = (profile?.nome ?? user.user_metadata?.nome)  as string | undefined
   const email = user.email ?? ''
+
+  console.log('[PortalLayout] resolved role    :', role)
+  console.log('[PortalLayout] resolved nome    :', nome)
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
