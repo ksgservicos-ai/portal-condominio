@@ -4,17 +4,31 @@ import UsersTable from '@/components/admin/UsersTable'
 
 async function getUsers() {
   const admin = createAdminClient()
-  const { data, error } = await admin.auth.admin.listUsers({ perPage: 1000 })
-  if (error) return []
-  return data.users.map((u) => ({
-    id: u.id,
-    email: u.email ?? '',
-    nome: (u.user_metadata?.nome as string) ?? '',
-    apartamento: (u.user_metadata?.apartamento as string) ?? '',
-    bloco: (u.user_metadata?.bloco as string) ?? '',
-    role: (u.user_metadata?.role as string) ?? 'usuario',
-    created_at: u.created_at,
-  }))
+
+  const [authResult, profilesResult] = await Promise.all([
+    admin.auth.admin.listUsers({ perPage: 1000 }),
+    admin.from('profiles').select('id, role, nome, apartamento, bloco'),
+  ])
+
+  if (authResult.error) return []
+
+  // profiles table is the source of truth for role and profile fields
+  const profileMap = new Map(
+    (profilesResult.data ?? []).map((p) => [p.id as string, p])
+  )
+
+  return authResult.data.users.map((u) => {
+    const p = profileMap.get(u.id)
+    return {
+      id: u.id,
+      email: u.email ?? '',
+      nome: p?.nome ?? (u.user_metadata?.nome as string) ?? '',
+      apartamento: p?.apartamento ?? (u.user_metadata?.apartamento as string) ?? '',
+      bloco: p?.bloco ?? (u.user_metadata?.bloco as string) ?? '',
+      role: p?.role ?? (u.user_metadata?.role as string) ?? 'usuario',
+      created_at: u.created_at,
+    }
+  })
 }
 
 export default async function UsuariosPage() {

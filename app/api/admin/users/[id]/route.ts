@@ -5,8 +5,18 @@ import { NextResponse } from 'next/server'
 async function requireAdmin() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user || user.user_metadata?.role !== 'admin') return null
-  return user
+  if (!user) return null
+
+  // user_metadata.role can be undefined for legacy users — check profiles table
+  const admin = createAdminClient()
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  const role = profile?.role ?? (user.user_metadata?.role as string | undefined)
+  return role === 'admin' ? user : null
 }
 
 export async function DELETE(
