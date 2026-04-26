@@ -27,18 +27,45 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const isAdminRoute = request.nextUrl.pathname.startsWith('/admin')
-  const isLoginPage = request.nextUrl.pathname === '/admin/login'
+  const { pathname } = request.nextUrl
+  const role = user?.user_metadata?.role as string | undefined
 
-  if (isAdminRoute && !isLoginPage && !user) {
+  const isLoginPage = pathname === '/login' || pathname === '/admin/login'
+  const isPortalRoute = pathname === '/' || pathname.startsWith('/publicacoes/')
+  const isAdminRoute = pathname.startsWith('/admin') && !isLoginPage
+  const isAuthApi = pathname.startsWith('/api/auth/')
+
+  // Auth callback routes always pass through
+  if (isAuthApi) return supabaseResponse
+
+  // Portal requires any authenticated user
+  if (isPortalRoute && !user) {
     const url = request.nextUrl.clone()
-    url.pathname = '/admin/login'
+    url.pathname = '/login'
+    if (pathname !== '/') url.searchParams.set('next', pathname)
     return NextResponse.redirect(url)
   }
 
+  // Admin routes require authenticated admin
+  if (isAdminRoute && !user) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    return NextResponse.redirect(url)
+  }
+
+  // Block non-admin authenticated users from admin routes
+  if (isAdminRoute && user && role !== 'admin') {
+    const url = request.nextUrl.clone()
+    url.pathname = '/'
+    url.search = ''
+    return NextResponse.redirect(url)
+  }
+
+  // Redirect authenticated users away from login pages
   if (isLoginPage && user) {
     const url = request.nextUrl.clone()
-    url.pathname = '/admin'
+    url.pathname = role === 'admin' ? '/admin' : '/'
+    url.search = ''
     return NextResponse.redirect(url)
   }
 

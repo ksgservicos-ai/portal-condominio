@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { Building2, FileText, LogOut, Plus } from 'lucide-react'
+import { Building2, FileText, LogOut, Plus, Users } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
@@ -44,6 +44,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
               >
                 <FileText className="w-4 h-4" />
                 <span className="hidden sm:inline">Publicações</span>
+              </Link>
+              <Link
+                href="/admin/usuarios"
+                className="flex items-center gap-1.5 text-brand-300 hover:text-white px-3 py-1.5 rounded-lg text-sm transition-colors"
+              >
+                <Users className="w-4 h-4" />
+                <span className="hidden sm:inline">Usuários</span>
               </Link>
               <form action="/api/auth/signout" method="POST">
                 <button
